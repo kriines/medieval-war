@@ -1,5 +1,7 @@
 [proxychains] DLL init: proxychains-ng 4.17
 [proxychains] DLL init: proxychains-ng 4.17
+[proxychains] DLL init: proxychains-ng 4.17
+[proxychains] DLL init: proxychains-ng 4.17
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -76,7 +78,7 @@ const DIFF={
   easy:{gold:550,spawn:195,bgold:20,name:'简单',desc:'初始550 | 轻松上手'},
   normal:{gold:700,spawn:110,bgold:36,name:'普通',desc:'初始700 | 势均力敌'},
   hard:{gold:750,spawn:70,bgold:55,name:'困难',desc:'初始750 | 敌军凶猛'},
-  hell:{gold:1800,spawn:42,bgold:80,name:'地狱',desc:'初始1800 | 如潮水涌来'},
+  hell:{gold:800,spawn:42,bgold:80,name:'地狱',desc:'初始800 | 如潮水涌来'},
 };
 let diff='normal',pWinSFX=false,pLoseSFX=false;
 
@@ -132,12 +134,20 @@ function spU(tp,tm,x,y){
 function eSp(){
   const c=DIFF[diff];eg+=c.bgold;
   const pl=[];
-  if(eg>=100)pl.push('soldier');if(eg>=200)pl.push('archer');if(eg>=300)pl.push('spearman');
+  if(eg>=100)pl.push('soldier');if(eg>=100)pl.push('miner');if(eg>=200)pl.push('archer');if(eg>=300)pl.push('spearman');
   if(eg>=500)pl.push('mage');if(eg>=1000)pl.push('catapult');
   if(!pl.length)return;
   let pk;
   if(diff==='hell'&&eg>=500&&Math.random()<0.45){const ex=pl.filter(t=>UD[t].cost>=300);if(ex.length)pk=ex[Math.floor(Math.random()*ex.length)];else pk=pl[Math.floor(Math.random()*pl.length)]}
-  else pk=pl[Math.floor(Math.random()*pl.length)];
+  else{
+    const ec={};eun.forEach(u=>{ec[u.tp]=(ec[u.tp]||0)+1});
+    const maxC=Math.max(...pl.map(t=>ec[t]||0),1);
+    const w=pl.map(t=>maxC-(ec[t]||0)+1);
+    const tw=w.reduce((a,b)=>a+b,0);
+    let r=Math.random()*tw;
+    for(let i=0;i<pl.length;i++){r-=w[i];if(r<=0){pk=pl[i];break}}
+    if(!pk)pk=pl[pl.length-1];
+  }
   const d=UD[pk];if(eg>=d.cost){eg-=d.cost;spU(pk,'e',E_CX-55,B_Y+(Math.random()-0.5)*6)}
 }
 
@@ -326,41 +336,64 @@ function drShd(x,y,s=1){ctx.fillStyle='rgba(0,0,0,0.22)';ctx.beginPath();ctx.ell
 
 function drSoldier(x,y,tc,fl,anim,atkA){
   ctx.save();ctx.translate(x,y);drShd(0,0);
-  const bob=Math.sin(anim)*2.5;ctx.translate(0,bob);
-  // 腿 & 走
-  const lx=Math.sin(anim)*5;
-  ctx.fillStyle='#4a4a4a';ctx.fillRect(-5+lx*0.5,10,5,12);ctx.fillRect(2-lx*0.5,10,5,12);
-  ctx.fillStyle='#2a1a08';ctx.fillRect(-7+lx*0.3,20,7,4);ctx.fillRect(0-lx*0.3,20,7,4);
-  // 身体
-  ctx.fillStyle='#8899aa';ctx.fillRect(-7,-6,14,16);
-  ctx.strokeStyle='#667788';ctx.lineWidth=0.8;ctx.strokeRect(-7,-6,14,16);
-  // 头盔
-  ctx.fillStyle='#8899aa';ctx.beginPath();ctx.arc(0,-12,8,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#667788';ctx.fillRect(-9,-7,18,3.5);
-  ctx.fillStyle='#444';ctx.fillRect(-5,-9,10,2);
+  const bob=Math.sin(anim)*2;ctx.translate(0,bob);
+  const lx=Math.sin(anim)*4;
+  // 披风 (body后)
+  ctx.fillStyle='#882222';ctx.beginPath();
+  ctx.moveTo(-6,2);ctx.lineTo(-14,10+Math.sin(anim)*3);ctx.lineTo(-11,20);ctx.lineTo(-3,8);ctx.closePath();ctx.fill();
+  // 腿甲
+  ctx.fillStyle='#5a5a60';ctx.fillRect(-5+lx*0.5,7,5,14);ctx.fillRect(2-lx*0.5,7,5,14);
+  ctx.fillStyle='#3a3028';ctx.fillRect(-7+lx*0.3,19,7,4);ctx.fillRect(0-lx*0.3,19,7,4);
+  // 身体板甲
+  ctx.fillStyle='#7a8a94';ctx.fillRect(-8,-6,16,16);
+  ctx.strokeStyle='#4a5a64';ctx.lineWidth=0.8;ctx.strokeRect(-8,-6,16,16);
+  // 胸甲中线
+  ctx.fillStyle='#6a7a84';ctx.fillRect(-1,-6,2,16);
+  // 腰带
+  ctx.fillStyle='#8b6b20';ctx.fillRect(-9,6,18,2.5);
+  ctx.fillStyle='#ddaa22';ctx.fillRect(-3,5.5,6,3.5);
+  // 头盔 + 面罩
+  ctx.fillStyle='#8a9aa4';ctx.beginPath();ctx.arc(0,-14,8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#3a4a5a';ctx.fillRect(-6,-18,12,10);
+  // 面罩竖缝
+  for(let vx=-4;vx<=4;vx+=2){
+    ctx.fillStyle='#111';ctx.fillRect(vx-0.5,-15,1,5);
+  }
+  // 鼻梁
+  ctx.fillStyle='#6a7a84';ctx.fillRect(-0.8,-18,1.6,10);
+  // 盔顶羽饰
+  ctx.fillStyle=tc;ctx.beginPath();ctx.moveTo(0,-24);ctx.lineTo(-8,-13);ctx.lineTo(-4,-15);ctx.closePath();ctx.fill();
+  ctx.fillStyle=tc.replace('cc','ff');ctx.beginPath();ctx.moveTo(0,-24);ctx.lineTo(8,-13);ctx.lineTo(4,-15);ctx.closePath();ctx.fill();
   // 攻击动画
-  if(atkA>0.01){ ctx.save();
-    const ph=atkA; // 1→0
-    let sax=8,say=-12,rot=0.3;
-    if(ph>0.55){rot=-1.2+(1-ph)*1.5;}// 举剑过头
-    else if(ph>0.25){rot=-0.7+(0.55-ph)*4;}// 挥砍
-    else{rot=0.5-(0.25-ph)*0.8;}// 收剑
+  if(atkA>0.01){
+    ctx.save();
+    const ph=atkA;
+    let sax=9,say=-14,rot=0.25;
+    if(ph>0.55)rot=-1.1+(1-ph)*1.4;
+    else if(ph>0.25)rot=-0.65+(0.55-ph)*3.5;
+    else rot=0.4-(0.25-ph)*0.6;
     ctx.translate(sax,say);ctx.rotate(rot);
-    ctx.fillStyle='#ccc';ctx.fillRect(-1,-1,24,2.5);// 剑身
-    ctx.fillStyle='#ffcc44';ctx.fillRect(22,-3,4,5);// 护手
-    ctx.fillStyle='#8b6914';ctx.fillRect(-4,-4,6,7);// 剑柄
+    ctx.fillStyle='#ccc';ctx.fillRect(-1,-1,26,3);
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,24,0.8);
+    ctx.fillStyle='#ddaa22';ctx.fillRect(24,-4,5,8);
+    ctx.fillStyle='#6b4910';ctx.fillRect(-5,-5,7,11);
     ctx.restore();
-    // 盾保持
-    ctx.fillStyle=tc;ctx.beginPath();ctx.moveTo(-14,-5);ctx.lineTo(-5,-12);ctx.lineTo(-5,5);ctx.lineTo(-14,1);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=0.6;ctx.stroke();
-  }else{
-    // 剑
-    ctx.fillStyle='#ccc';ctx.fillRect(8,-14,2,20);
-    ctx.fillStyle='#ffcc44';ctx.fillRect(6,-16,6,4);
-    ctx.fillStyle='#8b6914';ctx.fillRect(6,-10,6,5);
     // 盾
-    ctx.fillStyle=tc;ctx.beginPath();ctx.moveTo(-14,-5);ctx.lineTo(-5,-12);ctx.lineTo(-5,5);ctx.lineTo(-14,1);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=0.6;ctx.stroke();
+    ctx.fillStyle=tc;ctx.beginPath();ctx.moveTo(-16,-7);ctx.lineTo(-6,-15);ctx.lineTo(-6,5);ctx.lineTo(-16,1);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=0.7;ctx.stroke();
+    ctx.fillStyle='#ddaa22';ctx.beginPath();ctx.arc(-11,-5,3,0,Math.PI*2);ctx.fill();
+  }else{
+    // 剑 (立姿)
+    ctx.fillStyle='#ccc';ctx.fillRect(9,-13,2,19);
+    ctx.fillStyle='#fff';ctx.fillRect(9,-11,0.8,15);
+    ctx.fillStyle='#ddaa22';ctx.fillRect(7,-15,7,3.5);
+    ctx.fillStyle='#6b4910';ctx.fillRect(7,-11,7,5);
+    // 剑尖
+    ctx.fillStyle='#bbb';ctx.beginPath();ctx.moveTo(9,6);ctx.lineTo(6,10);ctx.lineTo(12,10);ctx.lineTo(11,6);ctx.closePath();ctx.fill();
+    // 盾
+    ctx.fillStyle=tc;ctx.beginPath();ctx.moveTo(-16,-7);ctx.lineTo(-6,-15);ctx.lineTo(-6,5);ctx.lineTo(-16,1);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=0.7;ctx.stroke();
+    ctx.fillStyle='#ddaa22';ctx.beginPath();ctx.arc(-11,-5,3,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
 }
