@@ -188,7 +188,7 @@ function buy(tp){if(scd>0)return;const d=UD[tp];if(pg<d.cost)return;pg-=d.cost;s
 // ═══════════ 更新 ═══════════
 function upd(dt){
   if(st!==ST.PLAY)return;const rd=dt||1;ft++;if(scd>0)scd--;try{updMusic(dt)}catch(e){};
-  pg+=P_GOLD*rd;mn.forEach(m=>{m.gT+=M_GOLD*rd;if(m.gT>=1){const n=Math.floor(m.gT);pg+=n;m.gT-=n;m.an+=0.06*rd}});
+  pg+=P_GOLD*rd;mn.forEach(m=>{m.gT+=M_GOLD*rd;if(m.gT>=1){const n=Math.floor(m.gT);if(m.tm==='e')eg+=n;else pg+=n;m.gT-=n;m.an+=0.06*rd}});
   pg=Math.round(pg*10)/10;
   esp+=rd;if(esp>=DIFF[diff].spawn){esp=0;eSp();}
 
@@ -206,19 +206,35 @@ function upd(dt){
 
     // 攻城优先：在城堡射程内时不跟小兵纠缠
     if(canAtkCastle){
+      // 近身敌人优先：如果35px内有敌兵，先打敌兵
+      let nearbyEnemy=null,nearDist=35;
+      en.forEach(e=>{const dx=e.x-u.x,dy=e.y-u.y;const d=Math.sqrt(dx*dx+dy*dy);if(d<nearDist){nearDist=d;nearbyEnemy=e}});
+      if(nearbyEnemy){
+        u.trg=nearbyEnemy;u.stt='fight';u.aT+=rd;
+        if(u.aT>=u.aspd*60){u.aT=0;u.atkA=1;atkDo(u,u.trg)}
+        if(isRgd&&nearDist<48){
+          const bk=u.tm==='p'?-1:1;
+          u.x+=bk*u.spd*rd*0.5;u.y+=(B_Y-u.y)*0.08*rd;
+        }
+        return;
+      }
+      // 攻城：发射投射物
       u.trg=null;
       u.aT+=rd;
       if(u.aT>=u.aspd*60){u.aT=0;u.atkA=1;
         if(u.tm==='p'){eHP-=u.atk;sfx('cstl');sP(E_CX,C_Y-30,'#ff8833',10)}
         else{pHP-=u.atk;sfx('cstl');sP(P_CX,C_Y-30,'#ff8833',10)}
+        // 远程攻城也射弹
+        if(isRgd){
+          const ctx=u.tm==='p'?E_CX:P_CX,cty=C_Y-30;
+          let pt='arrow',grav=0,sz=3;
+          if(u.tp==='mage'){pt='magic';sz=6}
+          if(u.tp==='catapult'){pt='rock';sz=7;grav=0.12}
+          prj.push({tp:pt,x:u.x,y:u.y-8,vx:(ctx-u.x)*0.08,vy:(cty-u.y)*0.08-1.5,lf:45,grav,sz,tm:u.tm,
+            clr:u.tp==='catapult'?'#887766':u.tp==='mage'?'#cc44ff':'#aa8833'});
+        }
       }
-      // 远程后退保持距离
-      if(isRgd&&toC<48){
-        const bk=u.tm==='p'?-1:1;
-        u.x+=bk*u.spd*rd*0.5;u.y+=(B_Y-u.y)*0.08*rd;
-      }
-      return; // 跳过索敌，专注攻城
-    }
+      // 远程后退保持距离}
 
     u.trg=null;let cd=1e9;
     // 搜索攻击范围内最近敌人
